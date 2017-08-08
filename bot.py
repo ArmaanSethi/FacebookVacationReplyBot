@@ -1,17 +1,36 @@
 import fbchat
+import random
+
 from user_info import MY_ID,MY_PASSWORD
-#https://scontent-iad3-1.xx.fbcdn.net/v/t1.0-1/c1.0.160.160/p160x160/13124855_1178970508810332_7106922968667891819_n.jpg?oh=1bee7925ee7d3ca916240d6231729eb3&oe=599CF92F
-client = fbchat.Client(MY_ID, MY_PASSWORD)
 
-friends = []
-friends.append(client.getUsers("Vamsi")[0])
-friends.append(client.getUsers("Harshal")[0])
+# subclass fbchat.Client and override required methods
+class EchoBot(fbchat.Client):
 
-#sent = client.send(friend.uid, "Yo im sending this through a my terminal lol...wsup")
-for f in friends:
-    #print(f)
-    #print(client.getUserInfo(f.uid))
+    def __init__(self,email, password, debug=True, user_agent=None):
+        fbchat.Client.__init__(self,email, password, debug, user_agent)
 
-    # sent = client.send(f.uid, "This be a message to multiple ppls from a ...idek what this is")
-    # if sent:
-    #     print(f, "Message sent successfully!")
+    def on_message(self, mid, author_id, author_name, message, metadata):
+        self.markAsDelivered(author_id, mid) #mark delivered
+        self.markAsRead(author_id) #mark read
+        print("%s said: %s"%(author_id, message))
+        #if you are not the author, echo
+        message +=  "\nthis was sent from a bot cuz Armaan doesn't feel like responding"
+        message = list(message)
+
+        #send the message recived back to the sender with the case of the letters randomized
+        for idx, c in enumerate(message):
+            if random.random() > 0.6:
+                print c
+                if c.isupper():
+                    message[idx] = c.lower()
+                else:
+                    message[idx] = c.upper()
+        message = "".join(message)
+
+        if str(author_id) != str(self.uid):
+            # self.send(author_id,message)
+            self.sendRemoteImage(author_id, message = message, image="https://usatftw.files.wordpress.com/2017/05/spongebob.jpg")
+
+#client = fbchat.Client(MY_ID, MY_PASSWORD)
+bot = EchoBot(MY_ID,MY_PASSWORD)
+bot.listen()
