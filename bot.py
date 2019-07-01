@@ -1,36 +1,24 @@
-import fbchat
+from user_info import MY_ID,MY_PASSWORD
+from fbchat import log, Client, Message, Attachment, ShareAttachment
+from fbchat.models import *
 import random
 
-from user_info import MY_ID,MY_PASSWORD
+class VacationBot(Client):
+    def onMessage(self, author_id, message_object, thread_id, thread_type, **kwargs):
+        self.markAsDelivered(thread_id, message_object.uid)
+        # self.markAsRead(thread_id)
+        log.info("{} from {} in {}".format(message_object, thread_id, thread_type.name))
 
-# subclass fbchat.Client and override required methods
-class EchoBot(fbchat.Client):
-
-    def __init__(self,email, password, debug=True, user_agent=None):
-        fbchat.Client.__init__(self,email, password, debug, user_agent)
-
-    def on_message(self, mid, author_id, author_name, message, metadata):
-        self.markAsDelivered(author_id, mid) #mark delivered
-        self.markAsRead(author_id) #mark read
-        print("%s said: %s"%(author_id, message))
-        #if you are not the author, echo
-        message +=  "\nthis was sent from a bot cuz Armaan doesn't feel like responding"
-        message = list(message)
-
-        #send the message recived back to the sender with the case of the letters randomized
-        for idx, c in enumerate(message):
-            if random.random() > 0.6:
-                print c
-                if c.isupper():
-                    message[idx] = c.lower()
-                else:
-                    message[idx] = c.upper()
-        message = "".join(message)
-
-        if str(author_id) != str(self.uid):
-            # self.send(author_id,message)
-            self.sendRemoteImage(author_id, message = message, image="https://usatftw.files.wordpress.com/2017/05/spongebob.jpg")
-
-#client = fbchat.Client(MY_ID, MY_PASSWORD)
-bot = EchoBot(MY_ID,MY_PASSWORD)
-bot.listen()
+        # If you're not the author, echo
+        if author_id != self.uid:
+            m = Message()
+            m.text = message_object.text
+            text_msg =  "\nthis was sent from a bot cuz Armaan doesn't feel like responding"
+            txt_msg = "".join(list(map(lambda x: x.upper() if random.random() > 0.5 else x.lower(), list(text_msg))))
+            m.text = txt_msg
+            self.reactToMessage(message_object.uid, MessageReaction.WOW)
+            self.sendRemoteImage("https://usatftw.files.wordpress.com/2017/05/spongebob.jpg", thread_id=thread_id, thread_type=thread_type)
+            self.send(m, thread_id=thread_id, thread_type=thread_type)
+            
+client = VacationBot(MY_ID, MY_PASSWORD)
+client.listen()
